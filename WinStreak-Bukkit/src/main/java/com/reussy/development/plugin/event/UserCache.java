@@ -2,6 +2,7 @@ package com.reussy.development.plugin.event;
 
 import com.andrei1058.bedwars.api.server.ServerType;
 import com.reussy.development.api.user.IUser;
+import com.reussy.development.plugin.ServerInstance;
 import com.reussy.development.plugin.WinStreakPlugin;
 import com.reussy.development.plugin.repository.UserRepository;
 import org.bukkit.Bukkit;
@@ -30,12 +31,12 @@ public class UserCache implements Listener {
 
         UUID uuid = event.getPlayer().getUniqueId();
 
-        if (plugin.isBedWars1058Present()) {
+        if (plugin.getBW1058().isRunning() || plugin.getBW2023().isRunning()) {
 
             /*
              * This condition handles the MULTI_ARENA and SHARED servers, we do not need to delay the loading of the cache.
              */
-            if (plugin.getBedWarsIntegration().get().getServerType() == ServerType.MULTIARENA || plugin.getBedWarsIntegration().get().getServerType() == ServerType.SHARED) {
+            if (plugin.getServerInstance() == ServerInstance.GAME_SERVER || plugin.getServerInstance() == ServerInstance.SHARED_SERVER) {
                 Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                     UserRepository.getInstance().removeUser(uuid);
                     IUser user = plugin.getDatabaseManager().getUser(uuid);
@@ -49,7 +50,7 @@ public class UserCache implements Listener {
                 /*
                  * This condition handles the BUNGEE servers and if necessary delay the loading of the cache to synchronize with the arena servers.
                  */
-            } else if (plugin.getBedWarsIntegration().get().getServerType() == ServerType.BUNGEE) {
+            } else if (plugin.getBW1058().get().getServerType() == ServerType.BUNGEE) {
                 Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                     UserRepository.getInstance().removeUser(uuid);
                     IUser user = plugin.getDatabaseManager().getUser(uuid);
@@ -60,7 +61,7 @@ public class UserCache implements Listener {
                     }
                 }, 2L);
             }
-        } else if (plugin.isBedWarsProxyPresent()) {
+        } else if (plugin.getServerInstance() == ServerInstance.HUB_SERVER){
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                 UserRepository.getInstance().removeUser(uuid);
                 IUser user = plugin.getDatabaseManager().getUser(uuid);

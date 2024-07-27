@@ -1,12 +1,11 @@
 package com.reussy.development.plugin.integration;
 
-import com.andrei1058.bedwars.api.BedWars;
-import com.reussy.development.plugin.WinStreakPlugin;
 import com.reussy.development.plugin.util.DebugUtil;
+import com.tomkeuper.bedwars.api.BedWars;
 import org.bukkit.Bukkit;
 
-public class BW1058 implements IPluginIntegration {
-    private BedWars bedWars;
+public class BW2023 implements IPluginIntegration {
+    private com.tomkeuper.bedwars.api.BedWars bedWars;
 
     /**
      * @return true If this plugin was hooked successfully, otherwise false.
@@ -21,7 +20,7 @@ public class BW1058 implements IPluginIntegration {
      */
     @Override
     public boolean isPresent() {
-        return Bukkit.getPluginManager().getPlugin("BedWars1058") != null;
+        return Bukkit.getPluginManager().getPlugin("BedWars2023") != null;
     }
 
     /**
@@ -29,7 +28,7 @@ public class BW1058 implements IPluginIntegration {
      */
     @Override
     public boolean isEnabled() {
-        return Bukkit.getPluginManager().isPluginEnabled("BedWars1058");
+        return Bukkit.getPluginManager().isPluginEnabled("BedWars2023");
     }
 
 
@@ -40,8 +39,8 @@ public class BW1058 implements IPluginIntegration {
     public boolean enable() {
 
         if (isPresent()) {
-            this.bedWars = Bukkit.getServicesManager().getRegistration(BedWars.class).getProvider();
-            DebugUtil.printBukkit("&7Using &aBedWars1058 &7as Bed Wars core.");
+            this.bedWars = Bukkit.getServicesManager().getRegistration(com.tomkeuper.bedwars.api.BedWars.class).getProvider();
+            DebugUtil.printBukkit("&7Using &3BedWars2023 &7as Bed Wars core.");
             return true;
         }
         return false;

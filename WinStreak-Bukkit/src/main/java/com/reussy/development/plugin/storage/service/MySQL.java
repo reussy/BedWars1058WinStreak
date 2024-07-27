@@ -171,7 +171,7 @@ public class MySQL implements IStorage {
 
         if (plugin.isBedWars1058Present()) {
 
-            return plugin.getBedWarsIntegration().get().getConfigs().getMainConfig().getYml();
+            return plugin.getBW1058().get().getConfigs().getMainConfig().getYml();
 
         } else if (plugin.isBedWarsProxyPresent()) {
             File proxyConfig = new File("plugins/BedWarsProxy/config.yml");
@@ -183,6 +183,6 @@ public class MySQL implements IStorage {
             Bukkit.getLogger().severe("Disabling...");
             Bukkit.getPluginManager().disablePlugin(plugin);
         }
-        return plugin.getBedWarsIntegration().get().getConfigs().getMainConfig().getYml();
+        return plugin.getBW1058().get().getConfigs().getMainConfig().getYml();
     }
 }

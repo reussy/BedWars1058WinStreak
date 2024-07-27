@@ -13,7 +13,7 @@ repositories {
     maven { url 'https://papermc.io/repo/repository/maven-public/' }
     maven { url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
     maven { url = 'https://oss.sonatype.org/content/groups/public/' }
-    maven { url = 'https://repo.andrei1058.dev/releases/' }
+    maven { url = 'https://repo.tomkeuper.com/repository/releases/' }
     maven { url = 'https://jitpack.io' }
     maven { url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
     maven { url = 'https://repo.maven.apache.org/maven2/' }
@@ -26,6 +26,7 @@ dependencies {
 
     compileOnly 'org.spigotmc:spigot-api:1.13-R0.1-SNAPSHOT'
     //compileOnly 'com.andrei1058.bedwars:bedwars-api:22.3.4'
+    compileOnly 'com.tomkeuper.bedwars:bedwars-api:1.2.0'
     compileOnly 'me.clip:placeholderapi:2.11.1'
 
     implementation 'com.zaxxer:HikariCP:5.0.1'

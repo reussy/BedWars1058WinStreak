@@ -1,12 +1,9 @@
 package com.reussy.development.plugin.integration;
 
-import com.andrei1058.bedwars.api.BedWars;
-import com.reussy.development.plugin.WinStreakPlugin;
 import com.reussy.development.plugin.util.DebugUtil;
 import org.bukkit.Bukkit;
 
-public class BW1058 implements IPluginIntegration {
-    private BedWars bedWars;
+public class BWProxy2023 implements IPluginIntegration {
 
     /**
      * @return true If this plugin was hooked successfully, otherwise false.
@@ -21,7 +18,7 @@ public class BW1058 implements IPluginIntegration {
      */
     @Override
     public boolean isPresent() {
-        return Bukkit.getPluginManager().getPlugin("BedWars1058") != null;
+        return Bukkit.getPluginManager().getPlugin("BWProxy2023") != null;
     }
 
     /**
@@ -29,33 +26,27 @@ public class BW1058 implements IPluginIntegration {
      */
     @Override
     public boolean isEnabled() {
-        return Bukkit.getPluginManager().isPluginEnabled("BedWars1058");
+        return Bukkit.getPluginManager().isPluginEnabled("BWProxy2023");
     }
 
-
     /**
-     * Enable and instance the plugin
+     * Enable and instance the plugin for Private Miner.
      */
     @Override
     public boolean enable() {
-
         if (isPresent()) {
-            this.bedWars = Bukkit.getServicesManager().getRegistration(BedWars.class).getProvider();
-            DebugUtil.printBukkit("&7Using &aBedWars1058 &7as Bed Wars core.");
+            DebugUtil.printBukkit("&7Using &3BedWarsProxy2023 &7as Bed Wars core.");
             return true;
         }
+
         return false;
     }
 
     /**
-     * Disable the instance of the plugin.
+     * Disable the plugin for Private Miner.
      */
     @Override
     public void disable() {
 
-    }
-
-    public BedWars get() {
-        return bedWars;
     }
 }

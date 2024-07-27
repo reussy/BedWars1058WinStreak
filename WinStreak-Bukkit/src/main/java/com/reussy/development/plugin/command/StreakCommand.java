@@ -17,55 +17,108 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 
-public class StreakCommand extends SubCommand {
+public class StreakCommand {
 
-    private final WinStreakPlugin plugin;
+    public static class StreakCommand1058 extends SubCommand {
 
-    public StreakCommand(WinStreakPlugin plugin, ParentCommand parentCommand, String subCommand) {
-        super(parentCommand, subCommand);
-        this.plugin = plugin;
-        setPriority(20);
-        showInList(true);
-        setDisplayInfo(textComponentBuilder("§6 ▪ §7/bw " + getSubCommandName() + "         §8- §eview your current winning streak"));
+            private final WinStreakPlugin plugin;
+
+            public StreakCommand1058(WinStreakPlugin plugin, ParentCommand parentCommand, String subCommand) {
+                super(parentCommand, subCommand);
+                this.plugin = plugin;
+                setPriority(20);
+                showInList(true);
+                setDisplayInfo(textComponentBuilder("§6 ▪ §7/bw " + getSubCommandName() + "         §8- §eview your current winning streak"));
+            }
+
+            @Override
+            public boolean execute(String[] args, CommandSender commandSender) {
+
+                if (!(commandSender instanceof Player player)) {
+                    Bukkit.getConsoleSender().sendMessage(PluginUtil.colorize("&cOnly players can use the command!"));
+                    return true;
+                }
+
+                if (plugin.getBW1058().get().getArenaUtil().isPlaying(player) || plugin.getBW1058().get().getArenaUtil().isSpectating(player)) {
+                    player.sendMessage(Language.getMsg(player, Messages.COMMAND_NOT_ALLOWED_IN_GAME));
+                    return true;
+                }
+
+                IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+
+                if (args.length > 0 && "-best".equals(args[0])) {
+                    PluginUtil.send(player, plugin.getFilesManager().getPlayerLanguage(player).getString("addons.win-streak.player-best-streak")
+                            .replace("{BEST_STREAK}", String.valueOf(user.getBestStreak())));
+                } else {
+                    PluginUtil.send(player, plugin.getFilesManager().getPlayerLanguage(player).getString("addons.win-streak.player-streak")
+                            .replace("{STREAK}", String.valueOf(user.getStreak())));
+                }
+
+                return true;
+            }
+
+            @Override
+            public List<String> getTabComplete() {
+                return null;
+            }
+
+            protected TextComponent textComponentBuilder(String message) {
+                TextComponent textComponent = new TextComponent(message);
+                textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/bw " + getSubCommandName()));
+                textComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, (new ComponentBuilder("Use -best for best winning streak")).create()));
+                return textComponent;
+            }
     }
 
-    @Override
-    public boolean execute(String[] args, CommandSender commandSender) {
+    public static class StreakCommand2023 extends com.tomkeuper.bedwars.api.command.SubCommand {
 
-        if (!(commandSender instanceof Player)) {
-            Bukkit.getConsoleSender().sendMessage(PluginUtil.colorize("&cOnly players can use the command!"));
-            return true;
-        }
+            private final WinStreakPlugin plugin;
 
-        Player player = (Player) commandSender;
+            public StreakCommand2023(WinStreakPlugin plugin, com.tomkeuper.bedwars.api.command.ParentCommand parentCommand, String subCommand) {
+                super(parentCommand, subCommand);
+                this.plugin = plugin;
+                setPriority(20);
+                showInList(true);
+                setDisplayInfo(textComponentBuilder("§6 ▪ §7/bw " + getSubCommandName() + "         §8- §eview your current winning streak"));
+            }
 
-        if (plugin.getBedWarsIntegration().get().getArenaUtil().isPlaying(player) || plugin.getBedWarsIntegration().get().getArenaUtil().isSpectating(player)) {
-            player.sendMessage(Language.getMsg(player, Messages.COMMAND_NOT_ALLOWED_IN_GAME));
-            return true;
-        }
+            @Override
+            public boolean execute(String[] args, CommandSender commandSender) {
 
-        IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+                if (!(commandSender instanceof Player player)) {
+                    Bukkit.getConsoleSender().sendMessage(PluginUtil.colorize("&cOnly players can use the command!"));
+                    return true;
+                }
 
-        if (args.length > 0 && "-best".equals(args[0])) {
-            PluginUtil.send(player, plugin.getFilesManager().getPlayerLanguage(player).getString("addons.win-streak.player-best-streak")
-                    .replace("{BEST_STREAK}", String.valueOf(user.getBestStreak())));
-        } else {
-            PluginUtil.send(player, plugin.getFilesManager().getPlayerLanguage(player).getString("addons.win-streak.player-streak")
-                    .replace("{STREAK}", String.valueOf(user.getStreak())));
-        }
+                if (plugin.getBW2023().get().getArenaUtil().isPlaying(player) || plugin.getBW2023().get().getArenaUtil().isSpectating(player)) {
+                    player.sendMessage(Language.getMsg(player, Messages.COMMAND_NOT_ALLOWED_IN_GAME));
+                    return true;
+                }
 
-        return true;
+                IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+
+                if (args.length > 0 && "-best".equals(args[0])) {
+                    PluginUtil.send(player, plugin.getFilesManager().getPlayerLanguage(player).getString("addons.win-streak.player-best-streak")
+                            .replace("{BEST_STREAK}", String.valueOf(user.getBestStreak())));
+                } else {
+                    PluginUtil.send(player, plugin.getFilesManager().getPlayerLanguage(player).getString("addons.win-streak.player-streak")
+                            .replace("{STREAK}", String.valueOf(user.getStreak())));
+                }
+
+                return true;
+            }
+
+            @Override
+            public List<String> getTabComplete() {
+                return null;
+            }
+
+            protected TextComponent textComponentBuilder(String message) {
+                TextComponent textComponent = new TextComponent(message);
+                textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/bw " + getSubCommandName()));
+                textComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, (new ComponentBuilder("Use -best for best winning streak")).create()));
+                return textComponent;
+            }
     }
 
-    @Override
-    public List<String> getTabComplete() {
-        return null;
-    }
-
-    protected TextComponent textComponentBuilder(String message) {
-        TextComponent textComponent = new TextComponent(message);
-        textComponent.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/bw " + getSubCommandName()));
-        textComponent.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, (new ComponentBuilder("Use -best for best winning streak")).create()));
-        return textComponent;
-    }
 }

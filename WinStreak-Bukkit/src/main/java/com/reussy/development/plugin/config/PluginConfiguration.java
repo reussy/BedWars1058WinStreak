@@ -90,8 +90,8 @@ public class PluginConfiguration {
     public YamlConfiguration getBedWarsLang() {
 
         if (plugin.isBedWars1058Present()) {
-            String iso = plugin.getBedWarsIntegration().get().getConfigs().getMainConfig().getString("language");
-            return plugin.getBedWarsIntegration().get().getLanguageByIso(iso).getYml();
+            String iso = plugin.getBW1058().get().getConfigs().getMainConfig().getString("language");
+            return plugin.getBW1058().get().getLanguageByIso(iso).getYml();
         } else if (plugin.isBedWarsProxyPresent()) {
             File proxyLanguage = new File("plugins/BedWarsProxy/Languages/messages_en.yml");
             return YamlConfiguration.loadConfiguration(proxyLanguage);
@@ -102,7 +102,7 @@ public class PluginConfiguration {
     public YamlConfiguration getPlayerLanguage(Player player) {
 
         if (plugin.isBedWars1058Present()) {
-            return plugin.getBedWarsIntegration().get().getPlayerLanguage(player).getYml();
+            return plugin.getBW1058().get().getPlayerLanguage(player).getYml();
         }
         return getBedWarsLang();
     }

@@ -9,10 +9,7 @@ import com.reussy.development.plugin.command.StreakCommandProxy;
 import com.reussy.development.plugin.config.PluginConfiguration;
 import com.reussy.development.plugin.event.UserCache;
 import com.reussy.development.plugin.event.UserInGame;
-import com.reussy.development.plugin.integration.BW1058;
-import com.reussy.development.plugin.integration.BWProxy;
-import com.reussy.development.plugin.integration.IPluginIntegration;
-import com.reussy.development.plugin.integration.PAPI;
+import com.reussy.development.plugin.integration.*;
 import com.reussy.development.plugin.repository.UserRepository;
 import com.reussy.development.plugin.storage.IStorage;
 import com.reussy.development.plugin.storage.service.MySQL;
@@ -32,11 +29,14 @@ import java.lang.reflect.Field;
 public class WinStreakPlugin extends JavaPlugin {
 
     private static WinStreakAPI api;
-    private BW1058 BWIntegration;
+    private BW1058 BW1058;
+    private com.reussy.development.plugin.integration.BW2023 BW2023;
     private BWProxy BWProxyIntegration;
+    private BWProxy2023 BWProxy2023;
     private PAPI PAPI;
     private IStorage IStorage;
     private PluginConfiguration pluginConfiguration;
+    private ServerInstance serverInstance;
 
     @Override
     public void onLoad() {
@@ -52,7 +52,7 @@ public class WinStreakPlugin extends JavaPlugin {
         final long start = System.currentTimeMillis();
         DebugUtil.separator();
         DebugUtil.printBukkit("&7Loading &cWinStreak add-on &7" + getDescription().getVersion() + " ...");
-        DebugUtil.printBukkit("&7The add-on was developed by &creussy. &7Much love ❤");
+        DebugUtil.printBukkit("&7The add-on was developed by &9HUH! Development. &7Much love ❤");
         DebugUtil.printBukkit("&7Running on &c" + Bukkit.getVersion() + " &7fork &c" + Bukkit.getBukkitVersion() + "&7.");
         DebugUtil.empty();
 
@@ -62,17 +62,22 @@ public class WinStreakPlugin extends JavaPlugin {
         DebugUtil.printBukkit("&cWinStreak add-on API &7initialized successfully, the API is ready to use.");
         DebugUtil.empty();
 
+        if (!PluginUtil.isBedWarsCorePlugin()) return;
+
         // Once plugin utilities are initialized, initialize plugin integrations.
         DebugUtil.printBukkit("&7Initializing plugin integrations...");
-        populateIntegrations(this.BWIntegration = new BW1058(), this.BWProxyIntegration = new BWProxy(), this.PAPI = new PAPI(this));
+        populateIntegrations(this.BW1058 = new BW1058(),
+                this.BWProxyIntegration = new BWProxy(),
+                this.BW2023 = new BW2023(),
+                this.BWProxy2023 = new BWProxy2023(),
+                this.PAPI = new PAPI(this));
 
-        if (!PluginUtil.isBedWarsCorePlugin()) return;
+        setServerInstance();
 
         // Once all plugin integrations are initialized, initialize the add-on configurations.
         this.pluginConfiguration = new PluginConfiguration(this);
 
         // Once all the integrations are initialized, we can register the storage and data property.
-        DebugUtil.empty();
         DebugUtil.printBukkit("&7Registering storage service...");
         setupStorage();
 
@@ -102,32 +107,50 @@ public class WinStreakPlugin extends JavaPlugin {
         }
     }
 
-    public boolean isBedWars1058Present() {
-        return Bukkit.getPluginManager().getPlugin("BedWars1058") != null;
-    }
-
-    public boolean isBedWarsProxyPresent() {
-        return Bukkit.getPluginManager().getPlugin("BedWarsProxy") != null;
-    }
-
     private void populateIntegrations(IPluginIntegration @NotNull ... integrations) {
         for (IPluginIntegration integration : integrations) {
             integration.enable();
         }
     }
 
+    private void setServerInstance(){
+        if (getBW1058().isRunning()){
+            if (getBW1058().get().getServerType() == ServerType.MULTIARENA){
+                this.serverInstance = ServerInstance.GAME_SERVER;
+            } else if (getBW1058().get().getServerType() == ServerType.BUNGEE){
+                this.serverInstance = ServerInstance.HUB_SERVER;
+            } else {
+                this.serverInstance = ServerInstance.SHARED_SERVER;
+            }
+        } else if (getBW2023().isRunning()){
+            if (getBW2023().get().getServerType() == com.tomkeuper.bedwars.api.server.ServerType.MULTIARENA){
+                this.serverInstance = ServerInstance.GAME_SERVER;
+            } else if (getBW2023().get().getServerType() == com.tomkeuper.bedwars.api.server.ServerType.BUNGEE){
+                this.serverInstance = ServerInstance.HUB_SERVER;
+            } else {
+                this.serverInstance = ServerInstance.SHARED_SERVER;
+            }
+        }
+        DebugUtil.printBukkit("&7The add-on has detected automatically the server type as &6" + this.serverInstance.name());
+        DebugUtil.empty();
+    }
+
+    public ServerInstance getServerInstance(){
+        return serverInstance;
+    }
+
     private void setupStorage() {
 
-        if (isBedWars1058Present()) {
+        if (getBW1058().isRunning() || getBW2023().isRunning()) {
 
-            if (!getBedWarsIntegration().get().getConfigs().getMainConfig().getBoolean("database.enable")) {
+            if (!getBW1058().get().getConfigs().getMainConfig().getBoolean("database.enable")) {
                 DebugUtil.printBukkit("&7Storage service &cSQLite &7registered.");
                 this.IStorage = new SQLite(this);
             } else {
                 DebugUtil.printBukkit("&7Storage service &cMySQL &7registered.");
                 this.IStorage = new MySQL(this);
             }
-        } else if (isBedWarsProxyPresent()) {
+        } else if (getBWProxy().isRunning() || getBWProxy2023().isRunning()) {
             File proxyConfig = new File("plugins/BedWarsProxy/config.yml");
             YamlConfiguration configYaml = YamlConfiguration.loadConfiguration(proxyConfig);
 
@@ -143,11 +166,11 @@ public class WinStreakPlugin extends JavaPlugin {
 
     private void setupEvents() {
 
-        if (isBedWars1058Present()) {
-            Bukkit.getPluginManager().registerEvents(new UserCache(this), this);
-            Bukkit.getPluginManager().registerEvents(new UserInGame(this), this);
-        } else if (isBedWarsProxyPresent()) {
-            Bukkit.getPluginManager().registerEvents(new UserCache(this), this);
+        Bukkit.getPluginManager().registerEvents(new UserCache(this), this);
+        if (getBW1058().isRunning()) {
+            Bukkit.getPluginManager().registerEvents(new UserInGame.InGame1058(this), this);
+        } else if (getBW2023().isRunning()) {
+            Bukkit.getPluginManager().registerEvents(new UserInGame.InGame2023(this), this);
         }
     }
 
@@ -162,16 +185,20 @@ public class WinStreakPlugin extends JavaPlugin {
             e.printStackTrace();
         }
 
-        if (isBedWars1058Present() && getBedWarsIntegration().get().getServerType() != ServerType.BUNGEE) {
-            new StreakCommand(this, getBedWarsIntegration().get().getBedWarsCommand(), "streak");
-        } else if (isBedWarsProxyPresent()) {
-            try {
-                Field bukkitCommandMap = Bukkit.getServer().getClass().getDeclaredField("commandMap");
-                bukkitCommandMap.setAccessible(true);
-                CommandMap commandMap = (CommandMap) bukkitCommandMap.get(Bukkit.getServer());
-                commandMap.register("winstreak", new StreakCommandProxy(this));
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                e.printStackTrace();
+        if (getBW1058().isRunning() && getBW1058().get().getServerType() != ServerType.BUNGEE) {
+            new StreakCommand.StreakCommand1058(this, getBW1058().get().getBedWarsCommand(), "streak");
+        } else if (getBW2023().isRunning() && getBW2023().get().getServerType() != com.tomkeuper.bedwars.api.server.ServerType.BUNGEE) {
+            new StreakCommand.StreakCommand2023(this, getBW2023().get().getBedWarsCommand(), "streak");
+        } else {
+            if (getBWProxy().isRunning() || getBWProxy2023().isRunning()) {
+                try {
+                    Field bukkitCommandMap = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+                    bukkitCommandMap.setAccessible(true);
+                    CommandMap commandMap = (CommandMap) bukkitCommandMap.get(Bukkit.getServer());
+                    commandMap.register("winstreak", new StreakCommandProxy(this));
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -180,12 +207,20 @@ public class WinStreakPlugin extends JavaPlugin {
         return api;
     }
 
-    public BW1058 getBedWarsIntegration() {
-        return BWIntegration;
+    public BW1058 getBW1058() {
+        return BW1058;
     }
 
-    public BWProxy getBedWarsProxyIntegration() {
+    public com.reussy.development.plugin.integration.BW2023 getBW2023() {
+        return BW2023;
+    }
+
+    public BWProxy getBWProxy() {
         return BWProxyIntegration;
+    }
+
+    public BWProxy2023 getBWProxy2023() {
+        return BWProxy2023;
     }
 
     public PAPI getPlaceholderAPI() {

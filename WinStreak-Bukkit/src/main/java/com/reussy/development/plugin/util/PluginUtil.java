@@ -14,10 +14,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * Methods to facilitate in-game messages
@@ -191,28 +192,46 @@ public class PluginUtil {
 
     public static boolean isBedWarsCorePlugin() {
 
-        if (plugin.getBedWarsIntegration().isRunning()) {
-            if (plugin.getBedWarsProxyIntegration().isRunning()) {
-                DebugUtil.empty();
-                DebugUtil.printBukkit("&cYou have more than one Bed Wars plugin running. Please disable one of them.");
-                Bukkit.getServer().getPluginManager().disablePlugin(plugin);
-                return false;
+        for (String plugin : Arrays.stream(Bukkit.getPluginManager().getPlugins()).map(org.bukkit.plugin.Plugin::getName).toList()) {
+            if (plugin.contains("BedWars1058")) {
+                if (plugin.contains("BedWars2023") || plugin.contains("BWProxy2023") || plugin.contains("BedWarsProxy")) {
+                    DebugUtil.empty();
+                    DebugUtil.printBukkit("&cYou have more than one Bed Wars plugin running. Please disable one of them.");
+                    Bukkit.getServer().getPluginManager().disablePlugin(WinStreakPlugin.getPlugin(WinStreakPlugin.class));
+                    return false;
+                }
+                return true;
+            } else if (plugin.contains("BedWars2023")) {
+                if (plugin.contains("BedWars1058") || plugin.contains("BWProxy2023") || plugin.contains("BedWarsProxy")) {
+                    DebugUtil.empty();
+                    DebugUtil.printBukkit("&cYou have more than one Bed Wars plugin running. Please disable one of them.");
+                    Bukkit.getServer().getPluginManager().disablePlugin(WinStreakPlugin.getPlugin(WinStreakPlugin.class));
+                    return false;
+                }
+                return true;
+            } else if (plugin.contains("BedWarsProxy")) {
+                if (plugin.contains("BedWars1058") || plugin.contains("BedWars2023") || plugin.contains("BWProxy2023")) {
+                    DebugUtil.empty();
+                    DebugUtil.printBukkit("&cYou have more than one Bed Wars plugin running. Please disable one of them.");
+                    Bukkit.getServer().getPluginManager().disablePlugin(WinStreakPlugin.getPlugin(WinStreakPlugin.class));
+                    return false;
+                }
+                return true;
+            } else if (plugin.contains("BWProxy2023")) {
+                if (plugin.contains("BedWars1058") || plugin.contains("BedWars2023") || plugin.contains("BedWarsProxy")) {
+                    DebugUtil.empty();
+                    DebugUtil.printBukkit("&cYou have more than one Bed Wars plugin running. Please disable one of them.");
+                    Bukkit.getServer().getPluginManager().disablePlugin(WinStreakPlugin.getPlugin(WinStreakPlugin.class));
+                    return false;
+                }
+                return true;
             }
-            return true;
-        } else if (plugin.getBedWarsProxyIntegration().isRunning()) {
-            if (plugin.getBedWarsIntegration().isRunning()) {
-                DebugUtil.empty();
-                DebugUtil.printBukkit("&cYou have more than one Bed Wars plugin running. Please disable one of them.");
-                Bukkit.getServer().getPluginManager().disablePlugin(plugin);
-                return false;
-            }
-            return true;
-        } else {
-            DebugUtil.empty();
-            DebugUtil.printBukkit("&cNo Bed Wars plugin core was found, disabling add-on...");
-            Bukkit.getServer().getPluginManager().disablePlugin(plugin);
-            return false;
         }
+
+        DebugUtil.empty();
+        DebugUtil.printBukkit("&cBed Wars plugin not found. Disabling WinStreak add-on.");
+        Bukkit.getServer().getPluginManager().disablePlugin(WinStreakPlugin.getPlugin(WinStreakPlugin.class));
+        return false;
     }
 
     public static void saveResource(@NotNull String resourcePath, @NotNull File config, @NotNull File folder, boolean replace) {

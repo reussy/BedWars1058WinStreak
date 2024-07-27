@@ -25,143 +25,289 @@ import java.util.UUID;
 
 public class UserInGame implements Listener {
 
-    private final WinStreakPlugin plugin;
-    private final Collection<UUID> leavingPlayers = new ArrayList<>();
-    private final Map<UUID, BukkitTask> rejoinTasks = new java.util.concurrent.ConcurrentHashMap<>();
+    public static class InGame1058 implements Listener{
 
-    public UserInGame(WinStreakPlugin plugin) {
-        this.plugin = plugin;
-    }
+        private final WinStreakPlugin plugin;
+        private final Collection<UUID> leavingPlayers = new ArrayList<>();
+        private final Map<UUID, BukkitTask> rejoinTasks = new java.util.concurrent.ConcurrentHashMap<>();
 
-    /**
-     * This event adds to the streak when the player wins the game.
-     * Also increment the best streak if the current streak
-     * is higher than the best streak.
-     *
-     * @param event The event.
-     */
-    @EventHandler
-    public void onWin(@NotNull GameEndEvent event) {
+        public InGame1058(WinStreakPlugin plugin) {
+            this.plugin = plugin;
+        }
 
-        event.getWinners().forEach(uuid -> {
+        /**
+         * This event adds to the streak when the player wins the game.
+         * Also increment the best streak if the current streak
+         * is higher than the best streak.
+         *
+         * @param event The event.
+         */
+        @EventHandler
+        public void onWin(@NotNull GameEndEvent event) {
 
-            Player player = Bukkit.getPlayer(uuid);
+            event.getWinners().forEach(uuid -> {
 
+                Player player = Bukkit.getPlayer(uuid);
+
+                IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+
+                PlayerIncrementStreak playerIncrementStreak = new PlayerIncrementStreak(user, user.getStreak(), user.getStreak() + 1);
+                Bukkit.getPluginManager().callEvent(playerIncrementStreak);
+
+                if (!playerIncrementStreak.isCancelled()) {
+                    user.setStreak(playerIncrementStreak.getNewStreak());
+                }
+
+                if (user.getStreak() > user.getBestStreak()) {
+                    PlayerIncrementBestStreak playerIncrementBestStreak = new PlayerIncrementBestStreak(user, user.getBestStreak(), user.getStreak());
+                    Bukkit.getPluginManager().callEvent(playerIncrementBestStreak);
+
+                    if (!playerIncrementBestStreak.isCancelled()) {
+                        user.setBestStreak(user.getStreak());
+                    }
+                }
+            });
+
+            leavingPlayers.forEach(uuid -> {
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null) {
+                    if (!event.getWinners().contains(uuid)) {
+                        IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+                        user.setStreak(0);
+                    }
+                }
+            });
+
+            leavingPlayers.clear();
+        }
+
+        /**
+         * This event resets the streak when the player dies.
+         *
+         * @param event The event.
+         */
+        @EventHandler
+        public void onDeath(@NotNull PlayerKillEvent event) {
+
+            Player victim = event.getVictim();
+
+            if (event.getArena().getStatus() != GameState.playing) return;
+
+            if (!plugin.getBW1058().get().getArenaUtil().isPlaying(victim)) return;
+
+            if (victim == null || !event.getCause().isFinalKill()) return;
+
+            UUID victimUUID = victim.getUniqueId();
+
+            IUser user = plugin.getAPI().getUserUtil().getUser(victimUUID);
+
+            PlayerResetStreak playerResetStreak = new PlayerResetStreak(user, user.getStreak());
+            Bukkit.getPluginManager().callEvent(playerResetStreak);
+
+            if (!playerResetStreak.isCancelled()) {
+                user.setStreak(0);
+            }
+        }
+
+        /**
+         * This event handles the player leave arena event.
+         * If the player leaves the arena, the plugin will create a new task
+         * to reset the streak if the player doesn't rejoin in time.
+         */
+        @EventHandler
+        public void onLeave(@NotNull PlayerLeaveArenaEvent event){
+
+            if (event.getArena().getStatus() != GameState.playing) return;
+
+            Player player = event.getPlayer();
             IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
 
-            PlayerIncrementStreak playerIncrementStreak = new PlayerIncrementStreak(user, user.getStreak(), user.getStreak() + 1);
-            Bukkit.getPluginManager().callEvent(playerIncrementStreak);
+            if (user.getStreak() == 0) return;
 
-            if (!playerIncrementStreak.isCancelled()) {
-                user.setStreak(playerIncrementStreak.getNewStreak());
-            }
+            leavingPlayers.add(player.getUniqueId()); // Add to leaving players list.
+            rejoinTasks.put(player.getUniqueId(), newTask(player.getUniqueId())); // Add to rejoin tasks list, to remove the player from leaving players list after the rejoin time.
+        }
 
-            if (user.getStreak() > user.getBestStreak()) {
-                PlayerIncrementBestStreak playerIncrementBestStreak = new PlayerIncrementBestStreak(user, user.getBestStreak(), user.getStreak());
-                Bukkit.getPluginManager().callEvent(playerIncrementBestStreak);
+        /**
+         * This event handles the player rejoin event.
+         * If the event is cancelled, the plugin will reset the streak.
+         * If the player rejoin in time, the plugin will cancel the task.
+         */
+        @EventHandler (ignoreCancelled = true)
+        public void onReJoin(@NotNull PlayerReJoinEvent event){
 
-                if (!playerIncrementBestStreak.isCancelled()) {
-                    user.setBestStreak(user.getStreak());
-                }
-            }
-        });
+            Player player = event.getPlayer();
+            IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
 
-        leavingPlayers.forEach(uuid -> {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                if (!event.getWinners().contains(uuid)) {
-                    IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+            if (event.isCancelled()){
+                if (leavingPlayers.contains(event.getPlayer().getUniqueId()) || event.getArena().getLeavingPlayers().contains(player)){
                     user.setStreak(0);
+                    leavingPlayers.remove(event.getPlayer().getUniqueId());
                 }
             }
-        });
 
-        leavingPlayers.clear();
-    }
-
-    /**
-     * This event resets the streak when the player dies.
-     *
-     * @param event The event.
-     */
-    @EventHandler
-    public void onDeath(@NotNull PlayerKillEvent event) {
-
-        Player victim = event.getVictim();
-
-        if (event.getArena().getStatus() != GameState.playing) return;
-
-        if (!plugin.getBedWarsIntegration().get().getArenaUtil().isPlaying(victim)) return;
-
-        if (victim == null || !event.getCause().isFinalKill()) return;
-
-        UUID victimUUID = victim.getUniqueId();
-
-        IUser user = plugin.getAPI().getUserUtil().getUser(victimUUID);
-
-        PlayerResetStreak playerResetStreak = new PlayerResetStreak(user, user.getStreak());
-        Bukkit.getPluginManager().callEvent(playerResetStreak);
-
-        if (!playerResetStreak.isCancelled()) {
-            user.setStreak(0);
-        }
-    }
-
-    /**
-     * This event handles the player leave arena event.
-     * If the player leaves the arena, the plugin will create a new task
-     * to reset the streak if the player doesn't rejoin in time.
-     */
-    @EventHandler
-    public void onLeave(@NotNull PlayerLeaveArenaEvent event){
-
-        if (event.getArena().getStatus() != GameState.playing) return;
-
-        Player player = event.getPlayer();
-        IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
-
-        if (user.getStreak() == 0) return;
-
-        leavingPlayers.add(player.getUniqueId()); // Add to leaving players list.
-        rejoinTasks.put(player.getUniqueId(), newTask(player.getUniqueId())); // Add to rejoin tasks list, to remove the player from leaving players list after the rejoin time.
-    }
-
-    /**
-     * This event handles the player rejoin event.
-     * If the event is cancelled, the plugin will reset the streak.
-     * If the player rejoin in time, the plugin will cancel the task.
-     */
-    @EventHandler (ignoreCancelled = true)
-    public void onReJoin(@NotNull PlayerReJoinEvent event){
-
-        Player player = event.getPlayer();
-        IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
-
-        if (event.isCancelled()){
-            if (leavingPlayers.contains(event.getPlayer().getUniqueId()) || event.getArena().getLeavingPlayers().contains(player)){
-                user.setStreak(0);
-                leavingPlayers.remove(event.getPlayer().getUniqueId());
+            if (rejoinTasks.containsKey(player.getUniqueId())){
+                rejoinTasks.get(player.getUniqueId()).cancel();
+                rejoinTasks.remove(player.getUniqueId());
             }
         }
 
-        if (rejoinTasks.containsKey(player.getUniqueId())){
-            rejoinTasks.get(player.getUniqueId()).cancel();
-            rejoinTasks.remove(player.getUniqueId());
+        /**
+         * Create a new task to reset the streak if the player doesn't rejoin in time.
+         *
+         * @param uuid The player uuid.
+         * @return The task.
+         */
+        private BukkitTask newTask(UUID uuid){
+            return Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                plugin.getAPI().getUserUtil().getUser(uuid).setStreak(0);
+                leavingPlayers.remove(uuid);
+                rejoinTasks.remove(uuid);
+                plugin.debug("The win streak of " + Bukkit.getPlayer(uuid).getName() + " has been reset because he didn't rejoin in time.");
+            }, plugin.getBW1058().get().getConfigs().getMainConfig().getInt(ConfigPath.GENERAL_CONFIGURATION_REJOIN_TIME) * 20L);
         }
     }
 
-    /**
-     * Create a new task to reset the streak if the player doesn't rejoin in time.
-     *
-     * @param uuid The player uuid.
-     * @return The task.
-     */
-    private BukkitTask newTask(UUID uuid){
-        return Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            plugin.getAPI().getUserUtil().getUser(uuid).setStreak(0);
-            leavingPlayers.remove(uuid);
-            rejoinTasks.remove(uuid);
-            plugin.debug("The win streak of " + Bukkit.getPlayer(uuid).getName() + " has been reset because he didn't rejoin in time.");
-        }, plugin.getBedWarsIntegration().get().getConfigs().getMainConfig().getInt(ConfigPath.GENERAL_CONFIGURATION_REJOIN_TIME) * 20L);
-    }
+    public static class InGame2023 implements Listener {
+
+        private final WinStreakPlugin plugin;
+        private final Collection<UUID> leavingPlayers = new ArrayList<>();
+        private final Map<UUID, BukkitTask> rejoinTasks = new java.util.concurrent.ConcurrentHashMap<>();
+
+        public InGame2023(WinStreakPlugin plugin) {
+            this.plugin = plugin;
+        }
+
+        /**
+         * This event adds to the streak when the player wins the game.
+         * Also increment the best streak if the current streak
+         * is higher than the best streak.
+         *
+         * @param event The event.
+         */
+        @EventHandler
+        public void onWin(@NotNull com.tomkeuper.bedwars.api.events.gameplay.GameEndEvent event) {
+
+            event.getWinners().forEach(uuid -> {
+
+                Player player = Bukkit.getPlayer(uuid);
+
+                IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+
+                PlayerIncrementStreak playerIncrementStreak = new PlayerIncrementStreak(user, user.getStreak(), user.getStreak() + 1);
+                Bukkit.getPluginManager().callEvent(playerIncrementStreak);
+
+                if (!playerIncrementStreak.isCancelled()) {
+                    user.setStreak(playerIncrementStreak.getNewStreak());
+                }
+
+                if (user.getStreak() > user.getBestStreak()) {
+                    PlayerIncrementBestStreak playerIncrementBestStreak = new PlayerIncrementBestStreak(user, user.getBestStreak(), user.getStreak());
+                    Bukkit.getPluginManager().callEvent(playerIncrementBestStreak);
+
+                    if (!playerIncrementBestStreak.isCancelled()) {
+                        user.setBestStreak(user.getStreak());
+                    }
+                }
+            });
+
+            leavingPlayers.forEach(uuid -> {
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null) {
+                    if (!event.getWinners().contains(uuid)) {
+                        IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+                        user.setStreak(0);
+                    }
+                }
+            });
+
+            leavingPlayers.clear();
+        }
+
+        /**
+         * This event resets the streak when the player dies.
+         *
+         * @param event The event.
+         */
+        @EventHandler
+        public void onDeath(@NotNull com.tomkeuper.bedwars.api.events.player.PlayerKillEvent event) {
+
+            Player victim = event.getVictim();
+
+            if (event.getArena().getStatus() != com.tomkeuper.bedwars.api.arena.GameState.playing) return;
+
+            if (!plugin.getBW1058().get().getArenaUtil().isPlaying(victim)) return;
+
+            if (victim == null || !event.getCause().isFinalKill()) return;
+
+            UUID victimUUID = victim.getUniqueId();
+
+            IUser user = plugin.getAPI().getUserUtil().getUser(victimUUID);
+
+            PlayerResetStreak playerResetStreak = new PlayerResetStreak(user, user.getStreak());
+            Bukkit.getPluginManager().callEvent(playerResetStreak);
+
+            if (!playerResetStreak.isCancelled()) {
+                user.setStreak(0);
+            }
+        }
+
+        /**
+         * This event handles the player leave arena event.
+         * If the player leaves the arena, the plugin will create a new task
+         * to reset the streak if the player doesn't rejoin in time.
+         */
+        @EventHandler
+        public void onLeave(@NotNull com.tomkeuper.bedwars.api.events.player.PlayerLeaveArenaEvent event){
+
+            if (event.getArena().getStatus() != com.tomkeuper.bedwars.api.arena.GameState.playing) return;
+
+            Player player = event.getPlayer();
+            IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+
+            if (user.getStreak() == 0) return;
+
+            leavingPlayers.add(player.getUniqueId()); // Add to leaving players list.
+            rejoinTasks.put(player.getUniqueId(), newTask(player.getUniqueId())); // Add to rejoin tasks list, to remove the player from leaving players list after the rejoin time.
+        }
+
+        /**
+         * This event handles the player rejoin event.
+         * If the event is cancelled, the plugin will reset the streak.
+         * If the player rejoin in time, the plugin will cancel the task.
+         */
+        @EventHandler (ignoreCancelled = true)
+        public void onReJoin(@NotNull com.tomkeuper.bedwars.api.events.player.PlayerReJoinEvent event){
+
+            Player player = event.getPlayer();
+            IUser user = plugin.getAPI().getUserUtil().getUser(player.getUniqueId());
+
+            if (event.isCancelled()){
+                if (leavingPlayers.contains(event.getPlayer().getUniqueId())){
+                    user.setStreak(0);
+                    leavingPlayers.remove(event.getPlayer().getUniqueId());
+                }
+            }
+
+            if (rejoinTasks.containsKey(player.getUniqueId())){
+                rejoinTasks.get(player.getUniqueId()).cancel();
+                rejoinTasks.remove(player.getUniqueId());
+            }
+        }
+
+        /**
+         * Create a new task to reset the streak if the player doesn't rejoin in time.
+         *
+         * @param uuid The player uuid.
+         * @return The task.
+         */
+        private BukkitTask newTask(UUID uuid){
+            return Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                plugin.getAPI().getUserUtil().getUser(uuid).setStreak(0);
+                leavingPlayers.remove(uuid);
+                rejoinTasks.remove(uuid);
+                plugin.debug("The win streak of " + Bukkit.getPlayer(uuid).getName() + " has been reset because he didn't rejoin in time.");
+            }, plugin.getBW1058().get().getConfigs().getMainConfig().getInt(ConfigPath.GENERAL_CONFIGURATION_REJOIN_TIME) * 20L);
+        }
+        }
 }
