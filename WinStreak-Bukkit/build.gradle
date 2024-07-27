@@ -2,7 +2,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '6.1.0'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
 group 'com.reussy.development'
@@ -22,15 +22,17 @@ repositories {
 dependencies {
     // https://mvnrepository.com/artifact/com.zaxxer/HikariCP
 
+    compileOnly fileTree(include: ['*.jar'], dir: 'libs') // Add everything in the libs folder.
+
+    compileOnly 'org.spigotmc:spigot-api:1.13-R0.1-SNAPSHOT'
+    //compileOnly 'com.andrei1058.bedwars:bedwars-api:22.3.4'
+    compileOnly 'me.clip:placeholderapi:2.11.1'
+
     implementation 'com.zaxxer:HikariCP:5.0.1'
     implementation 'org.slf4j:slf4j-simple:2.0.0'
     implementation 'org.jetbrains:annotations:23.0.0'
     implementation 'mysql:mysql-connector-java:8.0.29'
     implementation(project(':WinStreak-API'))
-
-    compileOnly 'org.spigotmc:spigot-api:1.13-R0.1-SNAPSHOT'
-    compileOnly 'com.andrei1058.bedwars:bedwars-api:22.3.4'
-    compileOnly 'me.clip:placeholderapi:2.11.1'
 }
 
 shadowJar {
