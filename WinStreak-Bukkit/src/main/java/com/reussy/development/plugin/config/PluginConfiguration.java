@@ -5,6 +5,7 @@ import com.reussy.development.plugin.WinStreakPlugin;
 import org.apache.commons.lang.Validate;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,38 +13,32 @@ import java.io.IOException;
 public class PluginConfiguration {
 
     private final WinStreakPlugin plugin;
-    private File configFile;
+    private final File configFile;
     private YamlConfiguration configYaml;
 
-    public PluginConfiguration(WinStreakPlugin plugin) {
+    public PluginConfiguration(@NotNull WinStreakPlugin plugin) {
         this.plugin = plugin;
 
-        if (plugin.isBedWars1058Present()) {
-            configFile = new File("plugins/BedWars1058/Addons/WinStreak/config.yml");
-            configYaml = YamlConfiguration.loadConfiguration(configFile);
 
-            createFile();
-            addConfigPaths();
-
-            try {
-                addLanguagePaths();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        } else if (plugin.isBedWarsProxyPresent()) {
-
+        if (plugin.getBW2023().isRunning()) {
+            this.configFile = new File("plugins/BedWars1058/Addons/WinStreak/config.yml");
+        } else if (plugin.getBW2023().isRunning()) {
+            configFile = new File("plugins/BedWars2023/Addons/WinStreak/config.yml");
+        } else if (plugin.getBWProxy().isRunning() || plugin.getBWProxy2023().isRunning()) {
             configFile = new File("plugins/BedWarsProxy/Addons/WinStreak/config.yml");
-            configYaml = YamlConfiguration.loadConfiguration(configFile);
+        } else {
+            configFile = new File("plugins/BWProxy2023/Addons/WinStreak/config.yml");
+        }
 
-            createFile();
-            addConfigPaths();
-            try {
-                addLanguagePaths();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        configYaml = YamlConfiguration.loadConfiguration(configFile);
 
+        createFile();
+        addConfigPaths();
+
+        try {
+            addLanguagePaths();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -89,11 +84,17 @@ public class PluginConfiguration {
      */
     public YamlConfiguration getBedWarsLang() {
 
-        if (plugin.isBedWars1058Present()) {
+        if (plugin.getBW1058().isRunning()) {
             String iso = plugin.getBW1058().get().getConfigs().getMainConfig().getString("language");
             return plugin.getBW1058().get().getLanguageByIso(iso).getYml();
-        } else if (plugin.isBedWarsProxyPresent()) {
+        } else if (plugin.getBWProxy().isRunning()) {
             File proxyLanguage = new File("plugins/BedWarsProxy/Languages/messages_en.yml");
+            return YamlConfiguration.loadConfiguration(proxyLanguage);
+        } else if (plugin.getBW2023().isRunning()){
+            String iso = plugin.getBW2023().get().getConfigs().getMainConfig().getString("language");
+            return plugin.getBW2023().get().getLanguageByIso(iso).getYml();
+        } else if (plugin.getBWProxy2023().isRunning()){
+            File proxyLanguage = new File("plugins/BWProxy2023/Languages/messages_en.yml");
             return YamlConfiguration.loadConfiguration(proxyLanguage);
         }
         return null;
@@ -101,15 +102,18 @@ public class PluginConfiguration {
 
     public YamlConfiguration getPlayerLanguage(Player player) {
 
-        if (plugin.isBedWars1058Present()) {
+        if (plugin.getBW1058().isRunning()) {
             return plugin.getBW1058().get().getPlayerLanguage(player).getYml();
+        } else if (plugin.getBW2023().isRunning()) {
+            return plugin.getBW2023().get().getPlayerLanguage(player).getYml();
         }
+
         return getBedWarsLang();
     }
 
     public void addLanguagePaths() throws IOException {
 
-        if (plugin.isBedWars1058Present()) {
+        if (plugin.getBW1058().isRunning() || plugin.getBW2023().isRunning()) {
 
             //TO-DO
             /*
@@ -167,7 +171,7 @@ public class PluginConfiguration {
                 }
                 language.save();
             }
-        } else if (plugin.isBedWarsProxyPresent()) {
+        } else if (plugin.getBWProxy().isRunning() || plugin.getBWProxy2023().isRunning()) {
 
             File languageFile = new File("plugins/BedWarsProxy/Languages/messages_en.yml");
             YamlConfiguration languageYaml = YamlConfiguration.loadConfiguration(languageFile);
