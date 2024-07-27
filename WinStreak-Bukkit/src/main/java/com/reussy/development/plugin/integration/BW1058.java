@@ -29,7 +29,7 @@ public class BW1058 implements IPluginIntegration {
      */
     @Override
     public boolean isEnabled() {
-        return Bukkit.getPluginManager().isPluginEnabled("BedWars1058");
+        return Bukkit.getPluginManager().isPluginEnabled("BedWars2023");
     }
 
 
