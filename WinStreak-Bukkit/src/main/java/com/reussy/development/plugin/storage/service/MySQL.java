@@ -169,15 +169,16 @@ public class MySQL implements IStorage {
 
     private YamlConfiguration getBedWarsConfig() {
 
-        if (plugin.isBedWars1058Present()) {
-
+        if (plugin.getBW1058().isRunning()) {
             return plugin.getBW1058().get().getConfigs().getMainConfig().getYml();
-
-        } else if (plugin.isBedWarsProxyPresent()) {
+        } else if (plugin.getBW2023().isRunning()) {
+            return plugin.getBW2023().get().getConfigs().getMainConfig().getYml();
+        } else if (plugin.getBWProxy().isRunning()) {
             File proxyConfig = new File("plugins/BedWarsProxy/config.yml");
-
             return YamlConfiguration.loadConfiguration(proxyConfig);
-
+        } else if (plugin.getBWProxy2023().isRunning()) {
+            File proxyConfig = new File("plugins/BedWarsProxy2023/config.yml");
+            return YamlConfiguration.loadConfiguration(proxyConfig);
         } else {
             Bukkit.getLogger().severe("There is no BedWars plugin installed!");
             Bukkit.getLogger().severe("Disabling...");

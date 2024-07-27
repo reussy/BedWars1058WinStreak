@@ -4,6 +4,7 @@ import com.reussy.development.api.user.IUser;
 import com.reussy.development.plugin.WinStreakPlugin;
 import com.reussy.development.plugin.repository.User;
 import com.reussy.development.plugin.storage.IStorage;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,10 +16,20 @@ public class SQLite implements IStorage {
     private final String url;
     private Connection connection;
 
-    public SQLite(WinStreakPlugin plugin) {
-        File database = plugin.isBedWars1058Present()
-                ? new File("plugins/BedWars1058/Cache/win_streak.db")
-                : new File("plugins/BedWarsProxy/Cache/win_streak.db");
+    public SQLite(@NotNull WinStreakPlugin plugin) {
+
+        File database;
+        if (plugin.getBW2023().isRunning()) {
+            database = new File("plugins/BedWars1058/Cache/win_streak.db");
+        } else if (plugin.getBW2023().isRunning()) {
+            database = new File("plugins/BedWars2023/Cache/win_streak.db");
+        } else if (plugin.getBWProxy().isRunning()) {
+            database = new File("plugins/BedWarsProxy/Cache/win_streak.db");
+        } else {
+            database = new File("plugins/BWProxy2023/Cache/win_streak.db");
+        }
+
+
         if (!database.exists())
             try {
                 database.createNewFile();
